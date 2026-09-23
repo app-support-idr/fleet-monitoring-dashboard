@@ -1,12 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Activity, AlertTriangle, Shield, History, Gauge } from 'lucide-react';
+import { LayoutDashboard, Activity, AlertTriangle, History, Gauge } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/', label: 'Vue d\'ensemble', icon: LayoutDashboard },
   { to: '/performance', label: 'Performance', icon: Activity },
   { to: '/incidents', label: 'Incidents', icon: AlertTriangle },
-  { to: '/ssl', label: 'SSL', icon: Shield },
   { to: '/historique', label: 'Historique', icon: History },
 ];
 

@@ -71,7 +71,7 @@ export async function getLatestCheck(
   const { data, error } = await supabase
     .from('monitoring_checks')
     .select(
-      'id, application_id, timestamp, internet, dns, ip, port_443, http_code, response_time_ms, ssl_valid, ssl_expiration, ssl_days_remaining, status, level, created_at'
+      'id, application_id, timestamp, internet, dns, ip, port_443, http_code, response_time_ms, status, level, created_at'
     )
     .eq('application_id', applicationId)
     .order('timestamp', { ascending: false })
@@ -97,7 +97,7 @@ export async function getRecentChecks(
   const { data, error } = await supabase
     .from('monitoring_checks')
     .select(
-      'id, application_id, timestamp, internet, dns, ip, port_443, http_code, response_time_ms, ssl_valid, ssl_expiration, ssl_days_remaining, status, level, created_at'
+      'id, application_id, timestamp, internet, dns, ip, port_443, http_code, response_time_ms, status, level, created_at'
     )
     .eq('application_id', applicationId)
     .gte('timestamp', cutoff)
@@ -118,7 +118,7 @@ export async function getAllChecks(
   let query = supabase
     .from('monitoring_checks')
     .select(
-      'id, application_id, timestamp, internet, dns, ip, port_443, http_code, response_time_ms, ssl_valid, ssl_expiration, ssl_days_remaining, status, level, created_at'
+      'id, application_id, timestamp, internet, dns, ip, port_443, http_code, response_time_ms, status, level, created_at'
     )
     .eq('application_id', applicationId)
     .order('timestamp', { ascending: false });

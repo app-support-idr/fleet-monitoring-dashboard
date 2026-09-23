@@ -25,9 +25,6 @@ export interface MonitoringCheck {
   port_443: string;
   http_code: number;
   response_time_ms: number;
-  ssl_valid: string;
-  ssl_expiration: string;
-  ssl_days_remaining: number;
   status: CheckStatus;
   level: Level;
   created_at: string;

@@ -117,14 +117,13 @@ export function HistoryPage() {
                   <TableHead>Temps (ms)</TableHead>
                   <TableHead>DNS</TableHead>
                   <TableHead>Port 443</TableHead>
-                  <TableHead>SSL</TableHead>
                   <TableHead>IP</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginated.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
+                    <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
                       Aucun contrôle trouvé avec ces filtres
                     </TableCell>
                   </TableRow>
@@ -154,9 +153,6 @@ export function HistoryPage() {
                       </TableCell>
                       <TableCell className="text-sm">
                         {c.port_443 === 'OK' ? 'OK' : 'ÉCHEC'}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {c.ssl_valid === 'OK' ? 'OK' : 'ÉCHEC'}
                       </TableCell>
                       <TableCell className="text-sm font-mono whitespace-nowrap">
                         {c.ip}

@@ -9,8 +9,6 @@ export const fleetApp: Application = {
   created_at: '2024-01-15T00:00:00Z',
 };
 
-const SECONDS_PER_DAY = 86400;
-
 function pad(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;
 }
@@ -44,7 +42,6 @@ function generateChecks(appId: number, count: number): MonitoringCheck[] {
     let internet = 'OK';
     let dns = 'OK';
     let port443 = 'OK';
-    let sslValid = 'OK';
 
     if (isDegraded) {
       httpCode = 503;
@@ -60,8 +57,6 @@ function generateChecks(appId: number, count: number): MonitoringCheck[] {
       port443 = 'KO';
     }
 
-    const sslDaysRemaining = Math.max(0, Math.round(35 - i / 100));
-
     checks.push({
       id: i + 1,
       application_id: appId,
@@ -74,9 +69,6 @@ function generateChecks(appId: number, count: number): MonitoringCheck[] {
       port_443: port443,
       http_code: httpCode,
       response_time_ms: responseTime,
-      ssl_valid: sslValid,
-      ssl_expiration: new Date(now + sslDaysRemaining * SECONDS_PER_DAY * 1000).toISOString(),
-      ssl_days_remaining: sslDaysRemaining,
       status,
       level,
       created_at: formatISO(ts),
@@ -118,7 +110,7 @@ function generateIncidents(appId: number): Incident[] {
       duration_seconds: null,
       status: 'OPEN',
       http_code: 200,
-      description: 'Certificat SSL approche de l\'expiration (< 45 jours). Surveillance renforcée.',
+      description: 'Connexion lente détectée — latence > 200ms sur plusieurs contrôles consécutifs. Surveillance renforcée.',
       created_at: deterministicSecondsAgo(3 * 60 * 60),
     },
     {

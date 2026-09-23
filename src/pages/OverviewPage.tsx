@@ -7,7 +7,7 @@ import { KpiCard } from '@/components/shared/KpiCard';
 import { StatusBadge } from '@/components/shared/StatusBadges';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
-  Globe, Server, Clock, Shield, Wifi, Activity, CheckCircle2, Calendar,
+  Globe, Server, Clock, Wifi, Activity, CheckCircle2, Calendar,
 } from 'lucide-react';
 import { useApplication, useLatestCheck, useRecentChecks, useIncidents, useAvailability } from '@/hooks/useMonitoring';
 import { formatTimeLabel, formatDateTime } from '@/services/mockData';
@@ -141,8 +141,6 @@ export function OverviewPage() {
         <KpiCard label="Temps de réponse" value={`${check.response_time_ms} ms`} icon={Clock} accent={check.response_time_ms < 200 ? 'success' : 'warning'} />
         <KpiCard label="DNS" value={check.dns === 'OK' ? 'OK' : 'ÉCHEC'} icon={Server} accent={check.dns === 'OK' ? 'success' : 'danger'} />
         <KpiCard label="Port 443" value={check.port_443 === 'OK' ? 'OK' : 'ÉCHEC'} icon={Wifi} accent={check.port_443 === 'OK' ? 'success' : 'danger'} />
-        <KpiCard label="SSL" value={check.ssl_valid === 'OK' ? 'OK' : 'ÉCHEC'} icon={Shield} accent={check.ssl_valid === 'OK' ? 'success' : 'danger'} />
-        <KpiCard label="SSL — Jours restants" value={`${check.ssl_days_remaining} j`} icon={Shield} accent={check.ssl_days_remaining > 30 ? 'success' : check.ssl_days_remaining > 7 ? 'warning' : 'danger'} />
         <KpiCard label="Disponibilité (24h)" value={`${availability.toFixed(2)} %`} icon={Activity} accent={availability > 99 ? 'success' : 'warning'} />
         <KpiCard label="Dernier contrôle" value={formatTimeLabel(check.timestamp)} icon={Calendar} />
       </div>

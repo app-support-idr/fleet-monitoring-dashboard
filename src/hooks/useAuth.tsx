@@ -18,6 +18,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const AUTH_INIT_TIMEOUT = 8000;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [monitoringStatus, setMonitoringStatus] =
@@ -44,9 +46,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let initialized = false;
 
-    supabase.auth.getSession().then(async ({ data }) => {
+    const finishInitialization = () => {
+      if (!mounted || initialized) return;
+
+      initialized = true;
+      setLoading(false);
+    };
+
+    const timeout = window.setTimeout(async () => {
+      if (!mounted || initialized) return;
+
+      console.warn(
+        'Initialisation Supabase Auth trop longue. Nettoyage de la session locale.'
+      );
+
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch (error) {
+        console.error(
+          'Erreur lors du nettoyage de la session locale:',
+          error
+        );
+      }
+
       if (!mounted) return;
+
+      setSession(null);
+      setMonitoringStatus(null);
+      finishInitialization();
+    }, AUTH_INIT_TIMEOUT);
+
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (!mounted || initialized) return;
+
+      if (error) {
+        console.error('Erreur récupération session:', error);
+
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+        } catch (signOutError) {
+          console.error(
+            'Erreur nettoyage session après erreur:',
+            signOutError
+          );
+        }
+
+        setSession(null);
+        setMonitoringStatus(null);
+        finishInitialization();
+        return;
+      }
 
       setSession(data.session);
 
@@ -56,7 +107,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setMonitoringStatus(null);
       }
 
-      setLoading(false);
+      if (mounted && !initialized) {
+        window.clearTimeout(timeout);
+        finishInitialization();
+      }
+    }).catch(async (error) => {
+      if (!mounted || initialized) return;
+
+      console.error('Erreur inattendue lors de l’initialisation Auth:', error);
+
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch (signOutError) {
+        console.error(
+          'Erreur nettoyage session après exception:',
+          signOutError
+        );
+      }
+
+      setSession(null);
+      setMonitoringStatus(null);
+
+      window.clearTimeout(timeout);
+      finishInitialization();
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
@@ -71,12 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setMonitoringStatus(null);
         }
 
-        setLoading(false);
+        if (!initialized) {
+          window.clearTimeout(timeout);
+          finishInitialization();
+        }
       }
     );
 
     return () => {
       mounted = false;
+      window.clearTimeout(timeout);
       listener.subscription.unsubscribe();
     };
   }, []);

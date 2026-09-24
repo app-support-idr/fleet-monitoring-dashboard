@@ -11,7 +11,7 @@ import { HistoryPage } from '@/pages/HistoryPage';
 import type { ReactNode } from 'react';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { session, loading, monitoringStatus, refreshMonitoringStatus } = useAuth();
+  const { session, loading, monitoringStatus } = useAuth();
 
   if (loading) {
     return (
@@ -38,12 +38,6 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
             de supervision doit encore être autorisé par un administrateur.
           </p>
 
-          <button
-            onClick={refreshMonitoringStatus}
-            className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
-          >
-            Vérifier mon accès
-          </button>
         </div>
       </div>
     );

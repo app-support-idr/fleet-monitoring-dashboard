@@ -1,22 +1,27 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { IncidentStatusBadge } from '@/components/shared/StatusBadges';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { AlertTriangle, Clock, AlertCircle, Timer } from 'lucide-react';
-import { useApplication, useIncidents } from '@/hooks/useMonitoring';
+import { useApplications, useIncidentsAllApps } from '@/hooks/useMonitoring';
 import { formatDateTime, formatDuration } from '@/services/mockData';
-import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type FilterKey = 'ALL' | 'OPEN' | 'RESOLVED';
+const ALL_APPS = 'all';
 
 export function IncidentsPage() {
-  const { app } = useApplication();
-  const { incidents } = useIncidents(app?.id);
-  const [filter, setFilter] = useState<FilterKey>('ALL');
+  const { apps } = useApplications();
+  const appIds = useMemo(() => apps.map((a) => a.id), [apps]);
+  const appsById = useMemo(() => new Map(apps.map((a) => [a.id, a])), [apps]);
+  const { incidents } = useIncidentsAllApps(appIds);
+
+  const [statusFilter, setStatusFilter] = useState<FilterKey>('ALL');
+  const [appFilter, setAppFilter] = useState<string>(ALL_APPS);
 
   const stats = useMemo(() => {
     const open = incidents.filter((i) => i.status === 'OPEN').length;
@@ -46,10 +51,13 @@ export function IncidentsPage() {
     };
   }, [incidents]);
 
-  const filteredIncidents = useMemo(() => {
-    if (filter === 'ALL') return incidents;
-    return incidents.filter((i) => i.status === filter);
-  }, [incidents, filter]);
+  const filtered = useMemo(() => {
+    return incidents.filter((i) => {
+      const matchStatus = statusFilter === 'ALL' || i.status === statusFilter;
+      const matchApp = appFilter === ALL_APPS || i.application_id === Number(appFilter);
+      return matchStatus && matchApp;
+    });
+  }, [incidents, statusFilter, appFilter]);
 
   return (
     <div className="space-y-6">
@@ -61,48 +69,46 @@ export function IncidentsPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          label="Incidents ouverts"
-          value={stats.open}
-          icon={AlertCircle}
-          accent={stats.open > 0 ? 'danger' : 'success'}
-        />
-        <KpiCard
-          label="Incidents sur 24h"
-          value={stats.last24h}
-          icon={Clock}
-          accent={stats.last24h > 0 ? 'warning' : 'success'}
-        />
-        <KpiCard
-          label="Incidents sur 7 jours"
-          value={stats.last7d}
-          icon={AlertTriangle}
-          accent={stats.last7d > 0 ? 'warning' : 'success'}
-        />
-        <KpiCard
-          label="Temps d'indisponibilité"
-          value={stats.downtime}
-          icon={Timer}
-          accent="default"
-        />
+        <KpiCard label="Incidents ouverts"    value={stats.open}   icon={AlertCircle} accent={stats.open > 0 ? 'danger' : 'success'} />
+        <KpiCard label="Incidents sur 24h"    value={stats.last24h} icon={Clock}       accent={stats.last24h > 0 ? 'warning' : 'success'} />
+        <KpiCard label="Incidents sur 7 jours" value={stats.last7d} icon={AlertTriangle} accent={stats.last7d > 0 ? 'warning' : 'success'} />
+        <KpiCard label="Temps d'indisponibilité" value={stats.downtime} icon={Timer} accent="default" />
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle>Historique des incidents</CardTitle>
-            <CardDescription>{filteredIncidents.length} incident(s)</CardDescription>
+            <CardDescription>{filtered.length} incident(s)</CardDescription>
           </div>
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
-            <TabsList>
-              <TabsTrigger value="ALL">Tous</TabsTrigger>
-              <TabsTrigger value="OPEN">Ouverts</TabsTrigger>
-              <TabsTrigger value="RESOLVED">Résolus</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-wrap gap-2">
+            {/* App filter */}
+            <Select value={appFilter} onValueChange={setAppFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Application" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_APPS}>Toutes les apps</SelectItem>
+                {apps.map((app) => (
+                  <SelectItem key={app.id} value={String(app.id)}>
+                    {app.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Status filter */}
+            <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as FilterKey)}>
+              <TabsList>
+                <TabsTrigger value="ALL">Tous</TabsTrigger>
+                <TabsTrigger value="OPEN">Ouverts</TabsTrigger>
+                <TabsTrigger value="RESOLVED">Résolus</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </CardHeader>
         <CardContent>
-          {filteredIncidents.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
               Aucun incident dans cette catégorie
             </div>
@@ -111,6 +117,7 @@ export function IncidentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Application</TableHead>
                     <TableHead>Début</TableHead>
                     <TableHead>Fin</TableHead>
                     <TableHead>Durée</TableHead>
@@ -120,28 +127,34 @@ export function IncidentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredIncidents.map((inc) => (
-                    <TableRow key={inc.id}>
-                      <TableCell className="whitespace-nowrap text-sm">
-                        {formatDateTime(inc.started_at)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">
-                        {inc.resolved_at ? formatDateTime(inc.resolved_at) : '—'}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">
-                        {formatDuration(inc.started_at, inc.resolved_at)}
-                      </TableCell>
-                      <TableCell>
-                        <IncidentStatusBadge status={inc.status} />
-                      </TableCell>
-                      <TableCell className="text-sm font-mono">
-                        {inc.http_code ?? '—'}
-                      </TableCell>
-                      <TableCell className="text-sm max-w-md">
-                        {inc.description ?? '—'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filtered.map((inc) => {
+                    const app = appsById.get(inc.application_id);
+                    return (
+                      <TableRow key={inc.id}>
+                        <TableCell className="text-sm font-medium whitespace-nowrap">
+                          {app?.name ?? `App #${inc.application_id}`}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {formatDateTime(inc.started_at)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {inc.resolved_at ? formatDateTime(inc.resolved_at) : '—'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {formatDuration(inc.started_at, inc.resolved_at)}
+                        </TableCell>
+                        <TableCell>
+                          <IncidentStatusBadge status={inc.status} />
+                        </TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {inc.http_code ?? '—'}
+                        </TableCell>
+                        <TableCell className="text-sm max-w-xs">
+                          {inc.description ?? '—'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

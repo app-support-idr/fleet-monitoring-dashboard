@@ -8,19 +8,23 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge, LevelBadge } from '@/components/shared/StatusBadges';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
-import { useApplication, useRecentChecks } from '@/hooks/useMonitoring';
+import { useApplications, useRecentChecksAllApps } from '@/hooks/useMonitoring';
 import { formatDateTime } from '@/services/mockData';
 import type { CheckStatus, Level } from '@/types';
 
 const PAGE_SIZE = 15;
+const ALL_APPS = 'all';
 
 export function HistoryPage() {
-  const { app } = useApplication();
-  const { checks } = useRecentChecks(app?.id, 24);
+  const { apps } = useApplications();
+  const appIds = useMemo(() => apps.map((a) => a.id), [apps]);
+  const appsById = useMemo(() => new Map(apps.map((a) => [a.id, a])), [apps]);
+  const { checks } = useRecentChecksAllApps(appIds, 24);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [levelFilter, setLevelFilter] = useState<string>('ALL');
+  const [appFilter, setAppFilter] = useState<string>(ALL_APPS);
   const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
@@ -29,14 +33,16 @@ export function HistoryPage() {
         search === '' ||
         (c.site?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
         c.ip.includes(search) ||
-        (c.url?.toLowerCase().includes(search.toLowerCase()) ?? false);
+        (c.url?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+        (appsById.get(c.application_id)?.name.toLowerCase().includes(search.toLowerCase()) ?? false);
 
       const matchStatus = statusFilter === 'ALL' || c.status === statusFilter;
       const matchLevel = levelFilter === 'ALL' || c.level === levelFilter;
+      const matchApp = appFilter === ALL_APPS || c.application_id === Number(appFilter);
 
-      return matchSearch && matchStatus && matchLevel;
+      return matchSearch && matchStatus && matchLevel && matchApp;
     });
-  }, [checks, search, statusFilter, levelFilter]);
+  }, [checks, search, statusFilter, levelFilter, appFilter, appsById]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages - 1);
@@ -62,20 +68,34 @@ export function HistoryPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="relative flex-1 min-w-48">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par site, URL ou IP..."
+                placeholder="Rechercher par site, IP ou application..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); resetPage(); }}
                 className="pl-9"
               />
             </div>
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => { setStatusFilter(v); resetPage(); }}
-            >
+
+            {/* App filter */}
+            <Select value={appFilter} onValueChange={(v) => { setAppFilter(v); resetPage(); }}>
+              <SelectTrigger className="w-full sm:w-44">
+                <Filter className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue placeholder="Application" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_APPS}>Toutes les apps</SelectItem>
+                {apps.map((app) => (
+                  <SelectItem key={app.id} value={String(app.id)}>
+                    {app.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); resetPage(); }}>
               <SelectTrigger className="w-full sm:w-40">
                 <Filter className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Statut" />
@@ -87,10 +107,8 @@ export function HistoryPage() {
                 <SelectItem value="CRITIQUE">CRITIQUE</SelectItem>
               </SelectContent>
             </Select>
-            <Select
-              value={levelFilter}
-              onValueChange={(v) => { setLevelFilter(v); resetPage(); }}
-            >
+
+            <Select value={levelFilter} onValueChange={(v) => { setLevelFilter(v); resetPage(); }}>
               <SelectTrigger className="w-full sm:w-40">
                 <Filter className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
                 <SelectValue placeholder="Niveau" />
@@ -128,37 +146,40 @@ export function HistoryPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginated.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="whitespace-nowrap text-sm font-mono">
-                        {formatDateTime(c.timestamp)}
-                      </TableCell>
-                      <TableCell className="text-sm whitespace-nowrap">
-                        {app?.name ?? '—'}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={c.status as CheckStatus} />
-                      </TableCell>
-                      <TableCell>
-                        <LevelBadge level={c.level as Level} />
-                      </TableCell>
-                      <TableCell className="text-sm font-mono">
-                        {c.http_code || '—'}
-                      </TableCell>
-                      <TableCell className="text-sm font-mono">
-                        {c.response_time_ms}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {c.dns === 'OK' ? 'OK' : 'ÉCHEC'}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {c.port_443 === 'OK' ? 'OK' : 'ÉCHEC'}
-                      </TableCell>
-                      <TableCell className="text-sm font-mono whitespace-nowrap">
-                        {c.ip}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  paginated.map((c) => {
+                    const app = appsById.get(c.application_id);
+                    return (
+                      <TableRow key={c.id}>
+                        <TableCell className="whitespace-nowrap text-sm font-mono">
+                          {formatDateTime(c.timestamp)}
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap font-medium">
+                          {app?.name ?? `App #${c.application_id}`}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={c.status as CheckStatus} />
+                        </TableCell>
+                        <TableCell>
+                          <LevelBadge level={c.level as Level} />
+                        </TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {c.http_code || '—'}
+                        </TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {c.response_time_ms}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {c.dns === 'OK' ? 'OK' : 'ÉCHEC'}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {c.port_443 === 'OK' ? 'OK' : 'ÉCHEC'}
+                        </TableCell>
+                        <TableCell className="text-sm font-mono whitespace-nowrap">
+                          {c.ip || '—'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

@@ -3,6 +3,7 @@ export type Environment = 'PRODUCTION' | 'STAGING' | 'DEVELOPMENT';
 export type CheckStatus = 'OK' | 'ALERTE' | 'CRITIQUE';
 export type Level = 'INFO' | 'ALERTE' | 'CRITIQUE';
 export type IncidentStatus = 'OPEN' | 'RESOLVED';
+export type NotificationType = 'created' | 'resolved';
 
 export interface Application {
   id: number;
@@ -40,4 +41,16 @@ export interface Incident {
   http_code: number | null;
   description: string | null;
   created_at: string;
+}
+
+export interface AppNotification {
+  id: string;
+  incidentId: number;
+  type: NotificationType;
+  timestamp: string;
+  applicationId: number;
+  applicationName: string;
+  description: string | null;
+  httpCode: number | null;
+  durationSeconds: number | null;
 }

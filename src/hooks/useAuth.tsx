@@ -13,6 +13,7 @@ interface AuthContextValue {
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updatePassword: (password: string) => Promise<{ error: string | null }>;
+  refreshMonitoringStatus: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -40,6 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMonitoringStatus(
       (data?.status as MonitoringStatus) ?? null
     );
+  };
+
+  const refreshMonitoringStatus = async () => {
+  if (!session?.user) {
+    setMonitoringStatus(null);
+    return;
+  }
+
+  await loadMonitoringStatus(session.user.id);
   };
 
   useEffect(() => {
@@ -129,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         resetPassword,
+        refreshMonitoringStatus,
         updatePassword,
         signOut,
       }}

@@ -11,7 +11,7 @@ import { HistoryPage } from '@/pages/HistoryPage';
 import type { ReactNode } from 'react';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { session, loading, monitoringStatus } = useAuth();
+  const { session, loading, monitoringStatus, refreshMonitoringStatus } = useAuth();
 
   if (loading) {
     return (
@@ -39,7 +39,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
           </p>
 
           <button
-            onClick={() => window.location.reload()}
+            onClick={refreshMonitoringStatus}
             className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
           >
             Vérifier mon accès

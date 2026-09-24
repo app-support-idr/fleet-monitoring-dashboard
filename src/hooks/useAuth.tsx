@@ -56,96 +56,83 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const timeout = window.setTimeout(() => {
-        if (!mounted || initialized) return;
-
-        console.warn(
-          'Initialisation Supabase Auth trop longue. Réinitialisation de la session locale.'
-        );
-
-        // On débloque immédiatement l'application.
-        setSession(null);
-        setMonitoringStatus(null);
-        finishInitialization();
-
-        // Nettoyage Supabase en arrière-plan.
-        void supabase.auth
-          .signOut({ scope: 'local' })
-          .catch((error) => {
-            console.error(
-              'Erreur lors du nettoyage de la session locale:',
-              error
-            );
-          });
-      }, AUTH_INIT_TIMEOUT);
-    supabase.auth.getSession().then(async ({ data, error }) => {
       if (!mounted || initialized) return;
 
-      if (error) {
-        console.error('Erreur récupération session:', error);
+      console.warn(
+        'Initialisation Supabase Auth trop longue.'
+      );
 
-        try {
-          await supabase.auth.signOut({ scope: 'local' });
-        } catch (signOutError) {
+      // Ne jamais déconnecter automatiquement l'utilisateur.
+      // On termine uniquement l'initialisation de l'interface.
+      finishInitialization();
+    }, AUTH_INIT_TIMEOUT);
+
+    const initializeAuth = async () => {
+      try {
+        const {
+          data: { session: currentSession },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (!mounted || initialized) return;
+
+        if (error) {
           console.error(
-            'Erreur nettoyage session après erreur:',
-            signOutError
+            'Erreur récupération session:',
+            error
           );
+
+          setSession(null);
+          setMonitoringStatus(null);
+          window.clearTimeout(timeout);
+          finishInitialization();
+          return;
         }
+
+        // La session Supabase est prioritaire.
+        setSession(currentSession);
+
+        // L'interface ne doit pas attendre la BDD
+        // pour considérer l'authentification comme initialisée.
+        window.clearTimeout(timeout);
+        finishInitialization();
+
+        // Le statut monitoring est chargé séparément.
+        if (currentSession?.user) {
+          void loadMonitoringStatus(currentSession.user.id);
+        } else {
+          setMonitoringStatus(null);
+        }
+      } catch (error) {
+        if (!mounted || initialized) return;
+
+        console.error(
+          'Erreur inattendue lors de l’initialisation Auth:',
+          error
+        );
 
         setSession(null);
         setMonitoringStatus(null);
-        finishInitialization();
-        return;
-      }
 
-      setSession(data.session);
-
-      if (data.session?.user) {
-        await loadMonitoringStatus(data.session.user.id);
-      } else {
-        setMonitoringStatus(null);
-      }
-
-      if (mounted && !initialized) {
         window.clearTimeout(timeout);
         finishInitialization();
       }
-    }).catch(async (error) => {
-      if (!mounted || initialized) return;
+    };
 
-      console.error('Erreur inattendue lors de l’initialisation Auth:', error);
-
-      try {
-        await supabase.auth.signOut({ scope: 'local' });
-      } catch (signOutError) {
-        console.error(
-          'Erreur nettoyage session après exception:',
-          signOutError
-        );
-      }
-
-      setSession(null);
-      setMonitoringStatus(null);
-
-      window.clearTimeout(timeout);
-      finishInitialization();
-    });
+    void initializeAuth();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      (_event, newSession) => {
         if (!mounted) return;
 
         setSession(newSession);
 
         if (newSession?.user) {
-          await loadMonitoringStatus(newSession.user.id);
+          // Ne pas bloquer le changement de session
+          // sur la requête monitoring_users.
+          void loadMonitoringStatus(newSession.user.id);
         } else {
           setMonitoringStatus(null);
-        }
-
-        if (!initialized) {
-          window.clearTimeout(timeout);
-          finishInitialization();
         }
       }
     );

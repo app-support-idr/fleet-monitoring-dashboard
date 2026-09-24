@@ -55,29 +55,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     };
 
-    const timeout = window.setTimeout(async () => {
-      if (!mounted || initialized) return;
+    const timeout = window.setTimeout(() => {
+        if (!mounted || initialized) return;
 
-      console.warn(
-        'Initialisation Supabase Auth trop longue. Nettoyage de la session locale.'
-      );
-
-      try {
-        await supabase.auth.signOut({ scope: 'local' });
-      } catch (error) {
-        console.error(
-          'Erreur lors du nettoyage de la session locale:',
-          error
+        console.warn(
+          'Initialisation Supabase Auth trop longue. Réinitialisation de la session locale.'
         );
-      }
 
-      if (!mounted) return;
+        // On débloque immédiatement l'application.
+        setSession(null);
+        setMonitoringStatus(null);
+        finishInitialization();
 
-      setSession(null);
-      setMonitoringStatus(null);
-      finishInitialization();
-    }, AUTH_INIT_TIMEOUT);
-
+        // Nettoyage Supabase en arrière-plan.
+        void supabase.auth
+          .signOut({ scope: 'local' })
+          .catch((error) => {
+            console.error(
+              'Erreur lors du nettoyage de la session locale:',
+              error
+            );
+          });
+      }, AUTH_INIT_TIMEOUT);
     supabase.auth.getSession().then(async ({ data, error }) => {
       if (!mounted || initialized) return;
 

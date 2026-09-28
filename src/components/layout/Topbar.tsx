@@ -48,7 +48,7 @@ export function Topbar() {
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <h1 className="text-base font-bold leading-tight">
-              {firstApp?.name ?? 'Fleet Monitoring'}
+              MONITORING
             </h1>
             <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
               {firstApp?.environment ?? 'PRODUCTION'}

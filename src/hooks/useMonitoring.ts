@@ -128,7 +128,6 @@ export function useLatestChecksAllApps(apps: Application[]) {
   const [checksMap, setChecksMap] = useState<Map<number, MonitoringCheck>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const appIds = useMemo(() => apps.map((a) => a.id), [apps]);
 
   const load = useCallback(async () => {
     if (apps.length === 0) { setLoading(false); return; }

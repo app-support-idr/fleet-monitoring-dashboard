@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 type FilterKey = 'ALL' | 'OPEN' | 'RESOLVED';
 const ALL_APPS = 'all';
 
-export function IncidentsPage() {
+export default function IncidentsPage() {
   const { apps } = useApplications();
   const appIds = useMemo(() => apps.map((a) => a.id), [apps]);
   const appsById = useMemo(() => new Map(apps.map((a) => [a.id, a])), [apps]);

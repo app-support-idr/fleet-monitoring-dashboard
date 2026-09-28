@@ -71,7 +71,7 @@ function ResponseTimeChart({ checks }: { checks: MonitoringCheck[] }) {
   );
 }
 
-export function OverviewPage() {
+export default function OverviewPage() {
   const { apps, loading: appsLoading } = useApplications();
   const { checksMap, loading: checksLoading } = useLatestChecksAllApps(apps);
   const firstApp = apps[0] ?? null;

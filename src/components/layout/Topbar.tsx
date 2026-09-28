@@ -36,7 +36,7 @@ export function Topbar() {
         {/* Mobile menu */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden">
+            <Button variant="ghost" size="icon" className="md:hidden" aria-label="Menu">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
@@ -78,7 +78,7 @@ export function Topbar() {
             {user?.email ?? 'demo@idrental.mg'}
           </span>
         </div>
-        <Button variant="outline" size="sm" onClick={() => signOut()}>
+        <Button variant="outline" size="sm" onClick={() => signOut()} aria-label="Déconnexion">
           <LogOut className="mr-1.5 h-4 w-4" />
           <span className="hidden sm:inline">Déconnexion</span>
         </Button>

@@ -1,24 +1,30 @@
 import './App.css';
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
-import LoginPage from '@/pages/LoginPage';
-import ResetPasswordPage from '@/pages/ResetPasswordPage';
-import { OverviewPage } from '@/pages/OverviewPage';
-import { PerformancePage } from '@/pages/PerformancePage';
-import { IncidentsPage } from '@/pages/IncidentsPage';
-import { HistoryPage } from '@/pages/HistoryPage';
 import type { ReactNode } from 'react';
 
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { session, loading, monitoringStatus } = useAuth();
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const OverviewPage = lazy(() => import('./pages/OverviewPage'));
+const PerformancePage = lazy(() => import('./pages/PerformancePage'));
+const IncidentsPage = lazy(() => import('./pages/IncidentsPage'));
+const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-muted-foreground">Chargement...</p>
-      </div>
-    );
+function PageLoader() {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <p className="text-muted-foreground">Chargement...</p>
+    </div>
+  );
+}
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { session, loading, monitoringStatus, monitoringStatusLoading } = useAuth();
+
+  if (loading || monitoringStatusLoading) {
+    return <PageLoader />;
   }
 
   if (!session) {
@@ -53,7 +59,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
           <p className="mb-6 text-muted-foreground">
             Votre accès au Dashboard de supervision a été désactivé.
-            Contactez un administrateur si vous pensez qu’il s’agit d’une erreur.
+            Contactez un administrateur si vous pensez qu'il s'agit d'une erreur.
           </p>
 
           <button
@@ -91,11 +97,7 @@ function PublicRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-muted-foreground">Chargement...</p>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (session) {
@@ -107,15 +109,17 @@ function PublicRoute({ children }: { children: ReactNode }) {
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/" element={<ProtectedRoute><OverviewPage /></ProtectedRoute>} />
-      <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
-      <Route path="/incidents" element={<ProtectedRoute><IncidentsPage /></ProtectedRoute>} />
-      <Route path="/historique" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/" element={<ProtectedRoute><OverviewPage /></ProtectedRoute>} />
+        <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
+        <Route path="/incidents" element={<ProtectedRoute><IncidentsPage /></ProtectedRoute>} />
+        <Route path="/historique" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

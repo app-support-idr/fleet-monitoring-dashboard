@@ -46,7 +46,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="border-t px-5 py-4">
         <p className="text-xs text-muted-foreground">
-          v1.0.0 — Données mockées
+          v1.0.0 — Connecté
         </p>
       </div>
     </div>

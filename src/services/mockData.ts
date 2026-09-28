@@ -157,7 +157,9 @@ export function formatDuration(startISO: string, resolvedISO: string | null): st
   if (!resolvedISO) return 'En cours';
   const start = new Date(startISO).getTime();
   const end = new Date(resolvedISO).getTime();
-  const diffMin = Math.round((end - start) / 60000);
+  const diffSec = Math.round((end - start) / 1000);
+  if (diffSec < 60) return `${diffSec} sec`;
+  const diffMin = Math.floor(diffSec / 60);
   if (diffMin < 60) return `${diffMin} min`;
   const h = Math.floor(diffMin / 60);
   const m = diffMin % 60;

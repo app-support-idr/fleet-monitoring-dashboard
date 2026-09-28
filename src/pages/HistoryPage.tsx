@@ -15,7 +15,27 @@ import type { CheckStatus, Level } from '@/types';
 const PAGE_SIZE = 15;
 const ALL_APPS = 'all';
 
-export function HistoryPage() {
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'OK', label: 'OK' },
+  { value: 'ALERTE', label: 'ALERTE' },
+  { value: 'CRITIQUE', label: 'CRITIQUE' },
+];
+
+const LEVEL_OPTIONS: { value: string; label: string }[] = [
+  { value: 'INFO', label: 'INFO' },
+  { value: 'ALERTE', label: 'ALERTE' },
+  { value: 'CRITIQUE', label: 'CRITIQUE' },
+];
+
+function isCheckStatus(value: string): value is CheckStatus {
+  return ['OK', 'ALERTE', 'CRITIQUE'].includes(value);
+}
+
+function isLevel(value: string): value is Level {
+  return ['INFO', 'ALERTE', 'CRITIQUE'].includes(value);
+}
+
+export default function HistoryPage() {
   const { apps } = useApplications();
   const appIds = useMemo(() => apps.map((a) => a.id), [apps]);
   const appsById = useMemo(() => new Map(apps.map((a) => [a.id, a])), [apps]);
@@ -28,17 +48,20 @@ export function HistoryPage() {
   const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+    const appFilterNum = appFilter === ALL_APPS ? null : Number(appFilter);
+
     return checks.filter((c) => {
       const matchSearch =
-        search === '' ||
-        (c.site?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-        c.ip.includes(search) ||
-        (c.url?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-        (appsById.get(c.application_id)?.name.toLowerCase().includes(search.toLowerCase()) ?? false);
+        normalizedSearch === '' ||
+        (c.site?.toLowerCase().includes(normalizedSearch) ?? false) ||
+        c.ip.includes(normalizedSearch) ||
+        (c.url?.toLowerCase().includes(normalizedSearch) ?? false) ||
+        (appsById.get(c.application_id)?.name.toLowerCase().includes(normalizedSearch) ?? false);
 
       const matchStatus = statusFilter === 'ALL' || c.status === statusFilter;
       const matchLevel = levelFilter === 'ALL' || c.level === levelFilter;
-      const matchApp = appFilter === ALL_APPS || c.application_id === Number(appFilter);
+      const matchApp = appFilterNum === null || c.application_id === appFilterNum;
 
       return matchSearch && matchStatus && matchLevel && matchApp;
     });
@@ -102,9 +125,11 @@ export function HistoryPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Tous les statuts</SelectItem>
-                <SelectItem value="OK">OK</SelectItem>
-                <SelectItem value="ALERTE">ALERTE</SelectItem>
-                <SelectItem value="CRITIQUE">CRITIQUE</SelectItem>
+                {STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -115,9 +140,11 @@ export function HistoryPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Tous les niveaux</SelectItem>
-                <SelectItem value="INFO">INFO</SelectItem>
-                <SelectItem value="ALERTE">ALERTE</SelectItem>
-                <SelectItem value="CRITIQUE">CRITIQUE</SelectItem>
+                {LEVEL_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -157,10 +184,10 @@ export function HistoryPage() {
                           {app?.name ?? `App #${c.application_id}`}
                         </TableCell>
                         <TableCell>
-                          <StatusBadge status={c.status as CheckStatus} />
+                          <StatusBadge status={isCheckStatus(c.status) ? c.status : undefined} />
                         </TableCell>
                         <TableCell>
-                          <LevelBadge level={c.level as Level} />
+                          <LevelBadge level={isLevel(c.level) ? c.level : 'INFO'} />
                         </TableCell>
                         <TableCell className="text-sm font-mono">
                           {c.http_code || '—'}

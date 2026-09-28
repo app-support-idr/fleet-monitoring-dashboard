@@ -96,7 +96,7 @@ function AllAppsPerf({ appIds, hours, appNames }: { appIds: number[]; hours: num
     return Array.from(byTime.values());
   }, [checks, appNames]);
 
-  const appNamesList = useMemo(() => Array.from(appNames.values()), [appNames]);
+  const appIdsList = useMemo(() => Array.from(appNames.keys()), [appNames]);
 
   return (
     <Card>
@@ -112,11 +112,11 @@ function AllAppsPerf({ appIds, hours, appNames }: { appIds: number[]; hours: num
             <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" unit=" ms" />
             <RechartsTooltip contentStyle={{ borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', fontSize: 12 }} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            {appNamesList.map((name, i) => (
+            {appIdsList.map((id, i) => (
               <Line
-                key={name}
+                key={id}
                 type="monotone"
-                dataKey={name}
+                dataKey={appNames.get(id) ?? `App ${id}`}
                 stroke={COLORS[i % COLORS.length]}
                 strokeWidth={2}
                 dot={false}
@@ -131,7 +131,7 @@ function AllAppsPerf({ appIds, hours, appNames }: { appIds: number[]; hours: num
   );
 }
 
-export function PerformancePage() {
+export default function PerformancePage() {
   const { apps } = useApplications();
   const [period, setPeriod] = useState<PeriodKey>('24h');
   const [selectedApp, setSelectedApp] = useState<string>(ALL_APPS);
@@ -142,7 +142,10 @@ export function PerformancePage() {
 
   const selectedAppId = selectedApp === ALL_APPS
     ? null
-    : Number(selectedApp);
+    : (() => {
+        const num = Number(selectedApp);
+        return Number.isNaN(num) ? null : num;
+      })();
 
   return (
     <div className="space-y-6">
@@ -191,8 +194,8 @@ export function PerformancePage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <KpiCard label="Contrôles réalisés" value="—" icon={Activity} accent="default" />
-        <KpiCard label="Fréquence de contrôle" value="2 min" icon={Clock} accent="default" />
+        <KpiCard label="Applications surveillées" value={String(apps.length)} icon={Activity} accent="default" />
+        <KpiCard label="Fréquence de contrôle" value="30 sec" icon={Clock} accent="default" />
       </div>
     </div>
   );

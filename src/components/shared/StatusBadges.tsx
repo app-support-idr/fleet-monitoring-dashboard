@@ -72,8 +72,14 @@ const levelConfig: Record<Level, { label: string; className: string; icon: typeo
   },
 };
 
+const unknownLevelConfig = {
+  label: '—',
+  className: 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900/50 dark:text-slate-400 dark:border-slate-700',
+  icon: Info,
+};
+
 export function LevelBadge({ level, className }: LevelBadgeProps) {
-  const config = levelConfig[level];
+  const config = levelConfig[level] ?? unknownLevelConfig;
   const Icon = config.icon;
   return (
     <span

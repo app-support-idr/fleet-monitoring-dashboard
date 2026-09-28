@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState, useEffect, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -11,6 +11,15 @@ export default function ResetPasswordPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -53,7 +62,7 @@ export default function ResetPasswordPage() {
 
     setMessage('Votre mot de passe a été modifié avec succès.');
 
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       navigate('/');
     }, 1500);
   }

@@ -129,7 +129,6 @@ export function useLatestChecksAllApps(apps: Application[]) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const appIds = useMemo(() => apps.map((a) => a.id), [apps]);
-  const appIdsKey = appIds.join(',');
 
   const load = useCallback(async () => {
     if (apps.length === 0) { setLoading(false); return; }
@@ -220,7 +219,6 @@ export function useRecentChecksAllApps(appIds: number[], hours: number = 24) {
   const [checks, setChecks] = useState<MonitoringCheck[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const key = appIds.join(',');
 
   const load = useCallback(async () => {
     if (appIds.length === 0) { setLoading(false); return; }
@@ -311,7 +309,6 @@ export function useIncidentsAllApps(appIds: number[]) {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const key = appIds.join(',');
 
   const load = useCallback(async () => {
     if (appIds.length === 0) { setLoading(false); return; }

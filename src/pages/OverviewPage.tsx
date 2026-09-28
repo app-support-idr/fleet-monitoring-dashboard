@@ -1,5 +1,5 @@
 import {
-  LineChart, Line, ResponsiveContainer, XAxis, YAxis, CartesianGrid,
+  ResponsiveContainer, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, Area, AreaChart,
 } from 'recharts';
 import { useMemo } from 'react';

@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Sidebar } from './Sidebar';
+// 1. IMPORTATION DU BOUTON DE THÈME
+import ThemeToggle from '@/components/ThemeToggle'; // Ajustez le chemin selon l'emplacement exact de votre fichier
 
 function ActiveAppStatus() {
   const { apps } = useApplications();
@@ -65,6 +67,9 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* 2. LE BOUTON AJOUTÉ ICI (À gauche de la cloche) */}
+        <ThemeToggle />
+
         <NotificationBell
           notifications={notifications}
           unreadCount={unreadCount}

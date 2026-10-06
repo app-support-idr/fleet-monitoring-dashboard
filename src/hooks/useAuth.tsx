@@ -1,14 +1,14 @@
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-
-type MonitoringStatus = 'PENDING' | 'ACTIVE' | 'DISABLED' | null;
+import type { MonitoringStatus, UserRole } from '@/types';
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  monitoringStatus: MonitoringStatus;
+  monitoringStatus: MonitoringStatus | null;
+  monitoringRole: UserRole | null;
   monitoringStatusLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -23,32 +23,33 @@ const AUTH_INIT_TIMEOUT = 8000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [monitoringStatus, setMonitoringStatus] =
-    useState<MonitoringStatus>(null);
+  const [monitoringStatus, setMonitoringStatus] = useState<MonitoringStatus | null>(null);
+  const [monitoringRole, setMonitoringRole] = useState<UserRole | null>(null);
   const [monitoringStatusLoading, setMonitoringStatusLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const loadMonitoringStatus = async (userId: string) => {
+  const loadMonitoringData = async (userId: string) => {
     setMonitoringStatusLoading(true);
     try {
       const { data, error } = await supabase
         .from('monitoring_users')
-        .select('status')
+        .select('status, role')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (error) {
         console.error('Erreur récupération statut monitoring:', error);
         setMonitoringStatus(null);
+        setMonitoringRole(null);
         return;
       }
 
-      setMonitoringStatus(
-        (data?.status as MonitoringStatus) ?? null
-      );
+      setMonitoringStatus((data?.status as MonitoringStatus) ?? null);
+      setMonitoringRole((data?.role as UserRole) ?? null);
     } catch (error) {
       console.error('Erreur inattendue chargement statut monitoring:', error);
       setMonitoringStatus(null);
+      setMonitoringRole(null);
     } finally {
       setMonitoringStatusLoading(false);
     }
@@ -60,38 +61,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const finishInitialization = () => {
       if (!mounted || initialized) return;
-
       initialized = true;
       setLoading(false);
     };
 
     const timeout = window.setTimeout(() => {
       if (!mounted || initialized) return;
-
-      console.warn(
-        'Initialisation Supabase Auth trop longue.'
-      );
-
+      console.warn('Initialisation Supabase Auth trop longue.');
       finishInitialization();
     }, AUTH_INIT_TIMEOUT);
 
     const initializeAuth = async () => {
       try {
-        const {
-          data: { session: currentSession },
-          error,
-        } = await supabase.auth.getSession();
-
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         if (!mounted || initialized) return;
 
         if (error) {
-          console.error(
-            'Erreur récupération session:',
-            error
-          );
-
+          console.error('Erreur récupération session:', error);
           setSession(null);
           setMonitoringStatus(null);
+          setMonitoringRole(null);
           window.clearTimeout(timeout);
           finishInitialization();
           return;
@@ -102,23 +91,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         finishInitialization();
 
         if (currentSession?.user) {
-          void loadMonitoringStatus(currentSession.user.id);
+          void loadMonitoringData(currentSession.user.id);
         } else {
           setMonitoringStatus(null);
+          setMonitoringRole(null);
           setMonitoringStatusLoading(false);
         }
       } catch (error) {
         if (!mounted || initialized) return;
-
-        console.error(
-          "Erreur inattendue lors de l'initialisation Auth:",
-          error
-        );
-
+        console.error("Erreur inattendue lors de l'initialisation Auth:", error);
         setSession(null);
         setMonitoringStatus(null);
+        setMonitoringRole(null);
         setMonitoringStatusLoading(false);
-
         window.clearTimeout(timeout);
         finishInitialization();
       }
@@ -129,13 +114,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         if (!mounted) return;
-
         setSession(newSession);
 
         if (newSession?.user) {
-          void loadMonitoringStatus(newSession.user.id);
+          void loadMonitoringData(newSession.user.id);
         } else {
           setMonitoringStatus(null);
+          setMonitoringRole(null);
           setMonitoringStatusLoading(false);
         }
       }
@@ -149,20 +134,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message ?? null };
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
+    const { error } = await supabase.auth.signUp({ email, password });
     return { error: error?.message ?? null };
   };
 
@@ -170,15 +147,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-
     return { error: error?.message ?? null };
   };
 
   const updatePassword = async (password: string) => {
-    const { error } = await supabase.auth.updateUser({
-      password,
-    });
-
+    const { error } = await supabase.auth.updateUser({ password });
     return { error: error?.message ?? null };
   };
 
@@ -193,13 +166,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     monitoringStatus,
+    monitoringRole,
     monitoringStatusLoading,
     signIn,
     signUp,
     resetPassword,
     updatePassword,
     signOut,
-  }), [session, user, loading, monitoringStatus, monitoringStatusLoading]);
+  }), [session, user, loading, monitoringStatus, monitoringRole, monitoringStatusLoading]);
 
   return (
     <AuthContext.Provider value={value}>
@@ -211,10 +185,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
-
   if (!ctx) {
     throw new Error('useAuth must be used within AuthProvider');
   }
-
   return ctx;
 }

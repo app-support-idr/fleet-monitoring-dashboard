@@ -8,8 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Sidebar } from './Sidebar';
-// 1. IMPORTATION DU BOUTON DE THÈME
-import ThemeToggle from '@/components/ThemeToggle'; // Ajustez le chemin selon l'emplacement exact de votre fichier
+import ThemeToggle from '@/components/ThemeToggle';
 
 function ActiveAppStatus() {
   const { apps } = useApplications();
@@ -23,8 +22,24 @@ function ActiveAppStatus() {
   );
 }
 
+function RoleBadge({ role }: { role: string | null }) {
+  if (!role) return null;
+  if (role === 'ADMIN') {
+    return (
+      <span className="rounded-full border bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 uppercase tracking-wide dark:bg-sky-950/50 dark:text-sky-400 dark:border-sky-800">
+        Admin
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full border bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+      User
+    </span>
+  );
+}
+
 export function Topbar() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, monitoringStatus, monitoringRole } = useAuth();
   const { apps } = useApplications();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -58,7 +73,7 @@ export function Topbar() {
           </div>
           <span className="text-xs text-muted-foreground hidden sm:block">
             {apps.length > 1
-              ? `${apps.length} applications surveillées`
+              ? `${apps.length} applications surveillees`
               : firstApp?.url ?? '—'}
           </span>
         </div>
@@ -67,7 +82,6 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* 2. LE BOUTON AJOUTÉ ICI (À gauche de la cloche) */}
         <ThemeToggle />
 
         <NotificationBell
@@ -79,13 +93,28 @@ export function Topbar() {
 
         <div className="hidden md:flex items-center gap-2 rounded-lg border px-3 py-1.5">
           <User className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">
-            {user?.email ?? 'demo@idrental.mg'}
-          </span>
+          <div className="flex flex-col leading-tight">
+            <span className="text-sm font-medium">
+              {user?.email ?? 'demo@idrental.mg'}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <RoleBadge role={monitoringRole} />
+              {monitoringStatus === 'ACTIVE' && (
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Actif</span>
+              )}
+              {monitoringStatus === 'PENDING' && (
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">En attente</span>
+              )}
+              {monitoringStatus === 'DISABLED' && (
+                <span className="text-[10px] text-red-600 dark:text-red-400 font-medium">Desactive</span>
+              )}
+            </div>
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => signOut()} aria-label="Déconnexion">
+
+        <Button variant="outline" size="sm" onClick={() => signOut()} aria-label="Deconnexion">
           <LogOut className="mr-1.5 h-4 w-4" />
-          <span className="hidden sm:inline">Déconnexion</span>
+          <span className="hidden sm:inline">Deconnexion</span>
         </Button>
       </div>
     </header>

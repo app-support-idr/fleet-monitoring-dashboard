@@ -11,6 +11,7 @@ const OverviewPage = lazy(() => import('./pages/OverviewPage'));
 const PerformancePage = lazy(() => import('./pages/PerformancePage'));
 const IncidentsPage = lazy(() => import('./pages/IncidentsPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
 
 function PageLoader() {
   return (
@@ -40,8 +41,8 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
           </h1>
 
           <p className="mb-6 text-muted-foreground">
-            Votre compte a bien été créé, mais votre accès au Dashboard
-            de supervision doit encore être autorisé par un administrateur.
+            Votre compte a bien ete cree, mais votre acces au Dashboard
+            de supervision doit encore etre autorise par un administrateur.
           </p>
 
         </div>
@@ -54,11 +55,11 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen items-center justify-center bg-background p-6">
         <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
           <h1 className="mb-3 text-2xl font-semibold">
-            Accès désactivé
+            Acces desactive
           </h1>
 
           <p className="mb-6 text-muted-foreground">
-            Votre accès au Dashboard de supervision a été désactivé.
+            Votre acces au Dashboard de supervision a ete desactive.
             Contactez un administrateur si vous pensez qu'il s'agit d'une erreur.
           </p>
 
@@ -78,16 +79,38 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen items-center justify-center bg-background p-6">
         <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
           <h1 className="mb-3 text-2xl font-semibold">
-            Accès non autorisé
+            Acces non autorise
           </h1>
 
           <p className="mb-6 text-muted-foreground">
-            Votre compte ne dispose pas encore des droits nécessaires
-            pour accéder à ce Dashboard.
+            Votre compte ne dispose pas encore des droits necessaires
+            pour acceder a ce Dashboard.
           </p>
         </div>
       </div>
     );
+  }
+
+  return <DashboardLayout>{children}</DashboardLayout>;
+}
+
+function AdminRoute({ children }: { children: ReactNode }) {
+  const { session, loading, monitoringStatus, monitoringRole, monitoringStatusLoading } = useAuth();
+
+  if (loading || monitoringStatusLoading) {
+    return <PageLoader />;
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (monitoringStatus !== 'ACTIVE') {
+    return <Navigate to="/" replace />;
+  }
+
+  if (monitoringRole !== 'ADMIN') {
+    return <Navigate to="/" replace />;
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;
@@ -117,6 +140,7 @@ function AppRoutes() {
         <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
         <Route path="/incidents" element={<ProtectedRoute><IncidentsPage /></ProtectedRoute>} />
         <Route path="/historique" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+        <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

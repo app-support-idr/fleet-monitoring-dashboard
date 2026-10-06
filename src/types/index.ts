@@ -4,6 +4,8 @@ export type CheckStatus = 'OK' | 'ALERTE' | 'CRITIQUE';
 export type Level = 'INFO' | 'ALERTE' | 'CRITIQUE';
 export type IncidentStatus = 'OPEN' | 'RESOLVED';
 export type NotificationType = 'created' | 'resolved';
+export type MonitoringStatus = 'PENDING' | 'ACTIVE' | 'DISABLED';
+export type UserRole = 'ADMIN' | 'USER';
 
 export interface Application {
   id: number;
@@ -53,4 +55,14 @@ export interface AppNotification {
   description: string | null;
   httpCode: number | null;
   durationSeconds: number | null;
+}
+
+export interface MonitoringUser {
+  id: number;
+  user_id: string;
+  email: string;
+  status: MonitoringStatus;
+  role: UserRole;
+  created_at: string;
+  activated_at: string | null;
 }

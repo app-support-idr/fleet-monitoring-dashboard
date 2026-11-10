@@ -22,73 +22,14 @@ function PageLoader() {
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { session, loading, monitoringStatus, monitoringStatusLoading } = useAuth();
+  const { session, loading } = useAuth();
 
-  if (loading || monitoringStatusLoading) {
+  if (loading) {
     return <PageLoader />;
   }
 
   if (!session) {
     return <Navigate to="/login" replace />;
-  }
-
-  if (monitoringStatus === 'PENDING') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-6">
-        <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
-          <h1 className="mb-3 text-2xl font-semibold">
-            Compte en attente
-          </h1>
-
-          <p className="mb-6 text-muted-foreground">
-            Votre compte a bien ete cree, mais votre acces au Dashboard
-            de supervision doit encore etre autorise par un administrateur.
-          </p>
-
-        </div>
-      </div>
-    );
-  }
-
-  if (monitoringStatus === 'DISABLED') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-6">
-        <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
-          <h1 className="mb-3 text-2xl font-semibold">
-            Acces desactive
-          </h1>
-
-          <p className="mb-6 text-muted-foreground">
-            Votre acces au Dashboard de supervision a ete desactive.
-            Contactez un administrateur si vous pensez qu'il s'agit d'une erreur.
-          </p>
-
-          <button
-            onClick={() => window.location.reload()}
-            className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
-          >
-            Actualiser
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (monitoringStatus !== 'ACTIVE') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-6">
-        <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
-          <h1 className="mb-3 text-2xl font-semibold">
-            Acces non autorise
-          </h1>
-
-          <p className="mb-6 text-muted-foreground">
-            Votre compte ne dispose pas encore des droits necessaires
-            pour acceder a ce Dashboard.
-          </p>
-        </div>
-      </div>
-    );
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;

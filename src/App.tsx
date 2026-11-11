@@ -1,17 +1,13 @@
 import './App.css';
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import type { ReactNode } from 'react';
 
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const OverviewPage = lazy(() => import('./pages/OverviewPage'));
 const PerformancePage = lazy(() => import('./pages/PerformancePage'));
 const IncidentsPage = lazy(() => import('./pages/IncidentsPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
-const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
 
 function PageLoader() {
   return (
@@ -21,67 +17,18 @@ function PageLoader() {
   );
 }
 
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth();
-
-  if (loading) {
-    return <PageLoader />;
-  }
-
-  if (!session) {
-    return <Navigate to="/login" replace />;
-  }
-
+function Layout({ children }: { children: ReactNode }) {
   return <DashboardLayout>{children}</DashboardLayout>;
-}
-
-function AdminRoute({ children }: { children: ReactNode }) {
-  const { session, loading, monitoringStatus, monitoringRole, monitoringStatusLoading } = useAuth();
-
-  if (loading || monitoringStatusLoading) {
-    return <PageLoader />;
-  }
-
-  if (!session) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (monitoringStatus !== 'ACTIVE') {
-    return <Navigate to="/" replace />;
-  }
-
-  if (monitoringRole !== 'ADMIN') {
-    return <Navigate to="/" replace />;
-  }
-
-  return <DashboardLayout>{children}</DashboardLayout>;
-}
-
-function PublicRoute({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth();
-
-  if (loading) {
-    return <PageLoader />;
-  }
-
-  if (session) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
 }
 
 function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/" element={<ProtectedRoute><OverviewPage /></ProtectedRoute>} />
-        <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
-        <Route path="/incidents" element={<ProtectedRoute><IncidentsPage /></ProtectedRoute>} />
-        <Route path="/historique" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+        <Route path="/" element={<Layout><OverviewPage /></Layout>} />
+        <Route path="/performance" element={<Layout><PerformancePage /></Layout>} />
+        <Route path="/incidents" element={<Layout><IncidentsPage /></Layout>} />
+        <Route path="/historique" element={<Layout><HistoryPage /></Layout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
@@ -90,11 +37,9 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
 

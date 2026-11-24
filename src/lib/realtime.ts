@@ -12,6 +12,7 @@ const MONITORED_TABLES = ['applications', 'monitoring_checks', 'incidents'] as c
 
 let refCount = 0;
 let channel: ReturnType<typeof supabase.channel> | null = null;
+let channelSeq = 0;
 const listeners = new Set<ChangeListener>();
 
 function notifyListeners(): void {
@@ -21,7 +22,8 @@ function notifyListeners(): void {
 function ensureChannel(): void {
   if (channel) return;
 
-  let builder = supabase.channel('monitoring-dashboard');
+  const name = `monitoring-dashboard-${++channelSeq}`;
+  let builder = supabase.channel(name);
   for (const table of MONITORED_TABLES) {
     builder = builder.on(
       'postgres_changes',
@@ -29,7 +31,17 @@ function ensureChannel(): void {
       notifyListeners
     );
   }
-  channel = builder.subscribe();
+
+  const ch = builder.subscribe((status) => {
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      void supabase.removeChannel(ch);
+      if (channel === ch) channel = null;
+      if (refCount > 0) {
+        window.setTimeout(ensureChannel, 3000);
+      }
+    }
+  });
+  channel = ch;
 }
 
 export function subscribeToMonitoringChanges(listener: ChangeListener): () => void {
@@ -41,8 +53,9 @@ export function subscribeToMonitoringChanges(listener: ChangeListener): () => vo
     listeners.delete(listener);
     refCount -= 1;
     if (refCount === 0 && channel) {
-      void supabase.removeChannel(channel);
+      const ch = channel;
       channel = null;
+      void supabase.removeChannel(ch);
     }
   };
 }

@@ -9,7 +9,7 @@ import { StatusBadge, LevelBadge } from '@/components/shared/StatusBadges';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { useApplications, useRecentChecksAllApps } from '@/hooks/useMonitoring';
-import { formatDateTime } from '@/services/mockData';
+import { formatDateTime } from '@/lib/format';
 import type { CheckStatus, Level } from '@/types';
 
 const PAGE_SIZE = 15;

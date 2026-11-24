@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Clock, Gauge, TrendingUp, TrendingDown, Activity, Zap } from 'lucide-react';
 import { useApplications, useRecentChecks, useRecentChecksAllApps } from '@/hooks/useMonitoring';
-import { formatTimeLabel } from '@/services/mockData';
+import { formatTimeLabel } from '@/lib/format';
 
 const periodConfig = {
   '24h': { hours: 24, label: '24 heures' },

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { formatDateTime, formatDuration } from '@/services/mockData';
+import { formatDateTime, formatDuration } from '@/lib/format';
 import type { AppNotification } from '@/types';
 
 interface NotificationBellProps {

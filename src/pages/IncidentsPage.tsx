@@ -8,7 +8,7 @@ import { IncidentStatusBadge } from '@/components/shared/StatusBadges';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { AlertTriangle, Clock, AlertCircle, Timer } from 'lucide-react';
 import { useApplications, useIncidentsAllApps } from '@/hooks/useMonitoring';
-import { formatDateTime, formatDuration } from '@/services/mockData';
+import { formatDateTime, formatDuration } from '@/lib/format';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type FilterKey = 'ALL' | 'OPEN' | 'RESOLVED';

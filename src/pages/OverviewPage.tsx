@@ -42,7 +42,7 @@ import {
   useRecentChecks,
   useIncidentsAllApps,
 } from '@/hooks/useMonitoring';
-import { formatTimeLabel, formatDateTime } from '@/services/mockData';
+import { formatTimeLabel, formatDateTime } from '@/lib/format';
 import type { MonitoringCheck } from '@/types';
 
 type ChartPeriod = {

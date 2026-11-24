@@ -2,12 +2,13 @@ import { useApplications, useLatestCheck, useNotifications } from '@/hooks/useMo
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/shared/StatusBadges';
 import { NotificationBell } from '@/components/shared/NotificationBell';
-import { Menu } from 'lucide-react';
+import { Menu, RotateCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Sidebar } from './Sidebar';
 import ThemeToggle from '@/components/ThemeToggle';
+import { triggerManualRefresh } from '@/lib/realtime';
 
 function ActiveAppStatus() {
   const { apps } = useApplications();
@@ -24,6 +25,13 @@ function ActiveAppStatus() {
 export function Topbar() {
   const { apps } = useApplications();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    triggerManualRefresh();
+    window.setTimeout(() => setRefreshing(false), 600);
+  };
 
   const { notifications, unreadCount, markAllAsRead, isUnread } = useNotifications(apps);
 
@@ -64,6 +72,17 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          aria-label="Actualiser les données"
+          title="Actualiser les données"
+        >
+          <RotateCw className={refreshing ? 'h-5 w-5 animate-spin' : 'h-5 w-5'} />
+        </Button>
+
         <ThemeToggle />
 
         <NotificationBell

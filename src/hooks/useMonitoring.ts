@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { subscribeToMonitoringChanges, MONITORING_REFRESH_EVENT } from '@/lib/realtime';
 import type { Application, MonitoringCheck, Incident, AppNotification } from '@/types';
 import {
   getApplications,
@@ -16,6 +17,25 @@ const REFRESH_INTERVAL = 30_000; // 30 secondes
 const NOTIFICATIONS_STORAGE_KEY = 'fleet-notifications-last-seen';
 const NOTIFICATIONS_WINDOW_HOURS = 24 * 7; // 7 days
 const MAX_NOTIFICATIONS = 20;
+
+function useRealtimeRefresh(callback: () => void) {
+  const savedCallback = useRef(callback);
+
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToMonitoringChanges(() => savedCallback.current());
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const handleManualRefresh = () => savedCallback.current();
+    window.addEventListener(MONITORING_REFRESH_EVENT, handleManualRefresh);
+    return () => window.removeEventListener(MONITORING_REFRESH_EVENT, handleManualRefresh);
+  }, []);
+}
 
 function useVisibilityAwareInterval(callback: () => void, delay: number) {
   const [isVisible, setIsVisible] = useState(!document.hidden);
@@ -49,24 +69,23 @@ export function useApplications() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const data = await getApplications();
-        if (!active) return;
-        setApps(data);
-        setError(null);
-      } catch (err) {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : 'Erreur de chargement');
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    load();
-    return () => { active = false; };
+  const load = useCallback(async () => {
+    try {
+      const data = await getApplications();
+      setApps(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur de chargement');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useRealtimeRefresh(load);
 
   return { apps, loading, error };
 }
@@ -118,6 +137,7 @@ export function useLatestCheck(applicationId: number | undefined) {
   }, [applicationId]);
 
   useVisibilityAwareInterval(load, REFRESH_INTERVAL);
+  useRealtimeRefresh(load);
 
   return { check, loading, error };
 }
@@ -163,6 +183,7 @@ export function useLatestChecksAllApps(apps: Application[]) {
   }, [apps]);
 
   useVisibilityAwareInterval(load, REFRESH_INTERVAL);
+  useRealtimeRefresh(load);
 
   return { checksMap, loading, error };
 }
@@ -208,6 +229,7 @@ export function useRecentChecks(applicationId: number | undefined, hours: number
   }, [applicationId, hours]);
 
   useVisibilityAwareInterval(load, REFRESH_INTERVAL);
+  useRealtimeRefresh(load);
 
   return { checks, loading, error };
 }
@@ -253,6 +275,7 @@ export function useRecentChecksAllApps(appIds: number[], hours: number = 24) {
   }, [appIds, hours]);
 
   useVisibilityAwareInterval(load, REFRESH_INTERVAL);
+  useRealtimeRefresh(load);
 
   return { checks, loading, error };
 }
@@ -298,6 +321,7 @@ export function useIncidents(applicationId: number | undefined) {
   }, [applicationId]);
 
   useVisibilityAwareInterval(load, REFRESH_INTERVAL);
+  useRealtimeRefresh(load);
 
   return { incidents, loading, error };
 }
@@ -343,6 +367,7 @@ export function useIncidentsAllApps(appIds: number[]) {
   }, [appIds]);
 
   useVisibilityAwareInterval(load, REFRESH_INTERVAL);
+  useRealtimeRefresh(load);
 
   return { incidents, loading, error };
 }
@@ -388,6 +413,7 @@ export function useAvailability(applicationId: number | undefined, hours: number
   }, [applicationId, hours]);
 
   useVisibilityAwareInterval(load, REFRESH_INTERVAL);
+  useRealtimeRefresh(load);
 
   return { availability, loading, error };
 }
@@ -447,6 +473,7 @@ export function useNotifications(apps: Application[]) {
   }, [appIds, appsById]);
 
   useVisibilityAwareInterval(load, REFRESH_INTERVAL);
+  useRealtimeRefresh(load);
 
   const unreadCount = useMemo(() => {
     if (!lastSeen) return allNotifications.length;
